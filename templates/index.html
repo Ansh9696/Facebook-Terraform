@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facebook Posting Prototype</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:1100px;margin:28px auto;padding:0 16px;color:#20242a;background:#f6f8fb}
+    h1,h2{margin-bottom:8px} .card{background:white;padding:18px;margin:16px 0;border-radius:12px;box-shadow:0 1px 5px #0001}
+    input,select,textarea,button{font:inherit;padding:9px;margin:5px 0;max-width:100%;box-sizing:border-box}
+    textarea{width:100%;min-height:100px} button{cursor:pointer} .destinations{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px}
+    .flash{padding:10px;background:#e8f3ff;border-radius:8px;margin:8px 0}.error{background:#ffe9e9}
+    table{border-collapse:collapse;width:100%;background:white}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}
+    .muted{color:#5e6875;font-size:.92em} a{margin-right:12px}
+  </style>
+</head>
+<body>
+<h1>Facebook Posting Prototype</h1>
+<p class="muted">Local prototype: Page posts use Meta's authorized API. Group items are placed in a manual queue; this app does not automate group publishing.</p>
+{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="flash {{ 'error' if category=='error' else '' }}">{{ message }}</div>{% endfor %}{% endwith %}
+<p><strong>{{ counts.destinations }}</strong> destinations · <strong>{{ counts.pending }}</strong> pending/manual items · <a href="{{ url_for('manual_queue') }}">Open Group Manual Queue</a></p>
+
+<section class="card">
+<h2>1. Add destination</h2>
+<form method="post" action="{{ url_for('add_destination') }}">
+  <input name="name" placeholder="Friendly name (e.g. My Page)" required>
+  <select name="kind"><option value="page">Facebook Page (API)</option><option value="group">Facebook Group (manual queue)</option></select>
+  <input name="target_id" placeholder="Page ID (required for Page; optional for Group)">
+  <button type="submit">Save destination</button>
+</form>
+</section>
+
+<section class="card">
+<h2>2. Compose a post</h2>
+<form method="post" action="{{ url_for('create_post') }}">
+  <textarea name="message" placeholder="Write the post text..." required></textarea>
+  <label>Schedule time (optional, ISO format with timezone, e.g. 2026-10-17T15:30:00+05:30)</label><br>
+  <input name="scheduled_at" placeholder="2026-10-17T15:30:00+05:30" style="width:340px">
+  <h3>Select destinations</h3>
+  <div class="destinations">
+  {% for d in destinations %}
+    <label><input type="checkbox" name="destination_ids" value="{{ d.id }}"> {{ d.name }} <span class="muted">({{ d.kind }})</span></label>
+  {% else %}<p>No destinations added yet.</p>{% endfor %}
+  </div>
+  <button type="submit">Queue post</button>
+</form>
+</section>
+
+<section class="card">
+<h2>3. Run worker now</h2>
+<p class="muted">This publishes due Page posts using the configured Page tokens and marks Group items for manual action. Use only with Pages you are authorized to manage.</p>
+<form method="post" action="{{ url_for('run_worker_route') }}"><button type="submit">Process queue now</button></form>
+</section>
+
+<section class="card">
+<h2>Recent posts</h2>
+<table><thead><tr><th>ID</th><th>Text</th><th>Scheduled</th><th>Status</th><th>Created</th><th>Error</th></tr></thead><tbody>
+{% for p in posts %}<tr><td>{{ p.id }}</td><td>{{ p.message }}</td><td>{{ p.scheduled_at or 'Now / unscheduled' }}</td><td>{{ p.status }}</td><td>{{ p.created_at }}</td><td>{{ p.last_error or '' }}</td></tr>
+{% else %}<tr><td colspan="6">No posts yet.</td></tr>{% endfor %}
+</tbody></table>
+</section>
+</body></html>

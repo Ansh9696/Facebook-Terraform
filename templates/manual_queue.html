@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group Manual Queue</title><style>
+body{font-family:system-ui,sans-serif;max-width:1000px;margin:28px auto;padding:0 16px;background:#f6f8fb}
+.card{background:white;padding:16px;margin:12px 0;border-radius:10px}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+button{padding:8px;font:inherit} .muted{color:#555}
+</style></head><body>
+<h1>Facebook Group Manual Queue</h1>
+<p class="muted">The app cannot publish to Groups through the removed Groups API. Copy the text, publish in Facebook manually, then optionally mark it done below. The app does not verify the post.</p>
+<p><a href="{{ url_for('index') }}">← Back to dashboard</a></p>
+{% for r in rows %}
+<div class="card">
+  <h3>Post #{{ r.post_id }} → {{ r.destination_name }}</h3>
+  <p>Status: <strong>{{ r.target_status }}</strong></p>
+  <pre>{{ r.message }}</pre>
+  {% if r.result %}<p class="muted">{{ r.result }}</p>{% endif %}
+  {% if r.target_status not in ['manually_marked_done'] %}
+  <form method="post" action="{{ url_for('mark_manual_done', target_row_id=r.target_row_id) }}">
+    <button type="submit">Mark manually posted</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}<p>No Group items queued.</p>{% endfor %}
+</body></html>
